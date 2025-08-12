@@ -131,3 +131,6 @@ GRANT ALL PRIVILEGES ON devices0.* TO 'proxy_user'@'localhost';
 GRANT ALL PRIVILEGES ON devices1.* TO 'proxy_user'@'localhost';
 FLUSH PRIVILEGES;
 
+--https://downv6.qq.com/qqweb/QQ_1/android_apk/Android_9.2.0_64.apk
+--https://dldir1.qq.com/weixin/android/weixin8061android2880_0x28003d34_arm64.apk
+

@@ -92,10 +92,12 @@ async def get_reboot_command(serial_number: str = Query(...)):
                         "UPDATE reboot SET processed = 1 WHERE id = %s",
                         (result[0]))
                     await conn.commit()
-                    return {"status": "success", "reboot": True}
+                    return {"status": "success",
+                            "reboot": True}
                 else:
                     await conn.commit()
-                    return {"status": "success", "reboot": False}
+                    return {"status": "success",
+                            "reboot": False}
             except Exception as e:
                 await conn.rollback()
                 raise HTTPException(
