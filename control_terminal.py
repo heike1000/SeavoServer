@@ -1,7 +1,6 @@
 import sys
 import pymysql
 import requests
-
 from consistent_hash import ConsistentHash
 
 password = '83929922Wr*'
@@ -67,10 +66,15 @@ def show_devices_info():
     try:
         print("DevicesInfo")
         columnWidth = 25
+        results = []
         connection = pymysql.connect(**DB_CONFIGS['devices0'])
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM devices_info")
-        results = cursor.fetchall()
+        results += cursor.fetchall()
+        connection = pymysql.connect(**DB_CONFIGS['devices1'])
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM devices_info")
+        results += cursor.fetchall()
         column_names = [desc[0] for desc in cursor.description]
         results_dict = alter_results_to_dict(results, column_names)
         for i in range(2):
@@ -93,11 +97,17 @@ def show_devices_online():
     try:
         print("DevicesOnline")
         columnWidth = 20
+        results = []
         connection = pymysql.connect(**DB_CONFIGS['devices0'])
         cursor = connection.cursor()
         cursor.execute(
             "SELECT serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, longitude, latitude, memory_usage FROM devices_info WHERE last_update >= DATE_SUB(NOW(), INTERVAL 30 SECOND)")
-        results = cursor.fetchall()
+        results += cursor.fetchall()
+        connection = pymysql.connect(**DB_CONFIGS['devices1'])
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, longitude, latitude, memory_usage FROM devices_info WHERE last_update >= DATE_SUB(NOW(), INTERVAL 30 SECOND)")
+        results += cursor.fetchall()
         column_names = [desc[0] for desc in cursor.description]
         results_dict = alter_results_to_dict(results, column_names)
         for i in range(5):
