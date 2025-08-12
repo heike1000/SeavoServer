@@ -126,7 +126,7 @@ def publish_app_to_install():
             website = input("App's download_url:\n")
             connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO apps_to_install (serial_number, download_url, processed) VALUES (%s, %s, 0)",
+            cursor.execute("INSERT INTO apps_to_install (serial_number, download_url) VALUES (%s, %s)",
                            (device_serial_number, website))
             connection.commit()
         except Exception as e:
@@ -143,7 +143,7 @@ def publish_app_to_uninstall():
             packageName = input("App's package name:\n")
             connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO apps_to_uninstall (serial_number, package_name, processed) VALUES (%s, %s, 0)",
+            cursor.execute("INSERT INTO apps_to_uninstall (serial_number, package_name) VALUES (%s, %s)",
                            (device_serial_number, packageName))
             connection.commit()
         except Exception as e:
@@ -159,7 +159,7 @@ def reboot_device():
         try:
             connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO reboot (serial_number, processed) VALUES (%s, 0)",
+            cursor.execute("INSERT INTO reboot (serial_number) VALUES (%s)",
                            (device_serial_number))
             connection.commit()
         except Exception as e:
@@ -223,7 +223,7 @@ def send_message():
         try:
             connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO messages (serial_number, message, processed) VALUES (%s, %s, 0)",
+            cursor.execute("INSERT INTO messages (serial_number, message) VALUES (%s, %s)",
                            (device_serial_number, content))
             connection.commit()
         except Exception as e:
@@ -274,7 +274,7 @@ def geographic_fence():
                 process = input("Process? (y/n)")
                 if (process == "y"):
                     if location[fence[0]] != fence[1]:
-                        cursor.execute("INSERT INTO reboot (serial_number, processed) VALUES (%s, 0)",
+                        cursor.execute("INSERT INTO reboot (serial_number) VALUES (%s)",
                                        (device_serial_number))
                         connection.commit()
                         cursor.execute("UPDATE devices_info SET limitation = %s WHERE serial_number = %s"

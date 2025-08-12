@@ -4,6 +4,9 @@ from consistent_hash import ConsistentHash
 import aiomysql
 from pydantic import BaseModel
 
+# https://downv6.qq.com/qqweb/QQ_1/android_apk/Android_9.2.0_64.apk
+# https://dldir1.qq.com/weixin/android/weixin8061android2880_0x28003d34_arm64.apk
+
 # apt install mysql-server
 # sudo mysql_secure_installation
 
@@ -23,14 +26,14 @@ DB_CONFIGS = {
         'host': 'localhost',
         'user': 'proxy_user',
         'password': password,
-        #'port': 6033,
+        # 'port': 6033,
         'db': 'devices0'
     },
     'devices1': {
         'host': 'localhost',
         'user': 'proxy_user',
         'password': password,
-        #'port': 6033,
+        # 'port': 6033,
         'db': 'devices1'
     }
 }
@@ -84,12 +87,12 @@ async def get_reboot_command(serial_number: str = Query(...)):
                                      SELECT id
                                      FROM reboot
                                      WHERE serial_number = %s
-                                       AND processed = 0
+                                       AND processed = '0'
                                      """, (serial_number))
                 result = await cursor.fetchone()
                 if result:
                     await cursor.execute(
-                        "UPDATE reboot SET processed = 1 WHERE id = %s",
+                        "UPDATE reboot SET processed = '1' WHERE id = %s",
                         (result[0]))
                     await conn.commit()
                     return {"status": "success",
@@ -118,12 +121,12 @@ async def get_apps_to_install(serial_number: str = Query(...)):
                                      SELECT id, download_url
                                      FROM apps_to_install
                                      WHERE serial_number = %s
-                                       AND processed = 0
+                                       AND processed = '0'
                                      """, (serial_number))
                 app_info = await cursor.fetchone()
                 if app_info:
                     await cursor.execute(
-                        "UPDATE apps_to_install SET processed = 1 WHERE id = %s",
+                        "UPDATE apps_to_install SET processed = '1' WHERE id = %s",
                         (app_info[0]))
                     await conn.commit()
                     return {
@@ -156,12 +159,12 @@ async def get_apps_to_uninstall(serial_number: str = Query(...)):
                                      SELECT id, package_name
                                      FROM apps_to_uninstall
                                      WHERE serial_number = %s
-                                       AND processed = 0
+                                       AND processed = '0'
                                      """, (serial_number))
                 app_info = await cursor.fetchone()
                 if app_info:
                     await cursor.execute(
-                        "UPDATE apps_to_uninstall SET processed = 1 WHERE id = %s",
+                        "UPDATE apps_to_uninstall SET processed = '1' WHERE id = %s",
                         (app_info[0]))
                     await conn.commit()
                     return {
@@ -282,7 +285,7 @@ async def get_messages(serial_number: str = Query(...)):
                                      SELECT id, message
                                      FROM messages
                                      WHERE serial_number = %s
-                                       AND processed = 0
+                                       AND processed = '0'
                                      """, (serial_number))
                 messages = await cursor.fetchall()
                 result = []
@@ -296,7 +299,7 @@ async def get_messages(serial_number: str = Query(...)):
                 if message_ids:
                     await cursor.execute("""
                                          UPDATE messages
-                                         SET processed = 1
+                                         SET processed = '1'
                                          WHERE id IN %s
                                          """, (message_ids,))
                 await conn.commit()
@@ -366,7 +369,7 @@ async def get_app_to_start_on_reboot(serial_number: str = Query(...)):
                 return {
                     "status": "success",
                     "app_name": result[0] if result else None,
-                    "kiosk": str(result[1]) if result else None
+                    "kiosk": result[1] if result else None
                 }
             except Exception as e:
                 await conn.rollback()
