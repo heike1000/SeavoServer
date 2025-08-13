@@ -225,9 +225,8 @@ async def register_device(data: RegisterDeviceRequest):
 
 class UpdateStateRequest(BaseModel):
     serial_number: str
-    waked: int
-    longitude: str
-    latitude: str
+    waked: str
+    location: str
     memory_usage: str
 
 
@@ -238,13 +237,12 @@ async def update_state(data: UpdateStateRequest):
         async with conn.cursor() as cursor:
             try:
                 await conn.begin()
-                if data.waked == 1:
+                if data.waked == "1":
                     sql = """
                           UPDATE devices_info
                           SET waked_at     = CURRENT_TIMESTAMP,
                               last_update  = CURRENT_TIMESTAMP,
-                              longitude    = %s,
-                              latitude     = %s,
+                              location    = %s,
                               memory_usage = %s
                           WHERE serial_number = %s \
                           """
@@ -252,19 +250,23 @@ async def update_state(data: UpdateStateRequest):
                     sql = """
                           UPDATE devices_info
                           SET last_update  = CURRENT_TIMESTAMP,
-                              longitude    = %s,
-                              latitude     = %s,
+                              location    = %s,
                               memory_usage = %s
                           WHERE serial_number = %s \
                           """
                 await cursor.execute(sql, (
-                    data.longitude,
-                    data.latitude,
+                    data.location,
                     data.memory_usage,
                     data.serial_number
                 ))
                 await conn.commit()
-                return {"status": "success"}
+                await cursor.execute(
+                    "SELECT geo_fence FROM devices_info WHERE serial_number = %s",
+                    (data.serial_number)
+                )
+                geo_fence = await cursor.fetchone()
+                return {"status": "success",
+                        "geo_fence": geo_fence[0]}
             except Exception as e:
                 await conn.rollback()
                 raise HTTPException(

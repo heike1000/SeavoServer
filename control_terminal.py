@@ -1,6 +1,5 @@
 import sys
 import pymysql
-import requests
 from consistent_hash import ConsistentHash
 
 password = '83929922Wr*'
@@ -21,35 +20,6 @@ DB_CONFIGS = {
         'database': 'devices1',
     }
 }
-
-
-def reverse_geocode(lng, lat):
-    url = f"https://restapi.amap.com/v3/geocode/regeo?key=17be3445fcdf6fedd3dcc394051c1bcf&location={lng},{lat}"
-    response = requests.get(url).json()
-    if response["status"] != "1":
-        return {
-            "country": "N/A",
-            "province": "N/A",
-            "city": "N/A",
-            "district": "N/A",
-            "township": "N/A",
-            "street": "N/A",
-            "number": "N/A",
-            "formatted_address": "N/A"
-        }
-    regeocode = response["regeocode"]
-    address_component = regeocode["addressComponent"]
-    address_levels = {
-        "country": address_component.get("country", ""),
-        "province": address_component.get("province", ""),
-        "city": address_component.get("city", ""),
-        "district": address_component.get("district", ""),
-        "township": address_component.get("township", ""),
-        "street": address_component.get("streetNumber", {}).get("street", ""),
-        "number": address_component.get("streetNumber", {}).get("number", ""),
-        "formatted_address": regeocode.get("formatted_address", "")
-    }
-    return address_levels
 
 
 def alter_results_to_dict(results, column_name):
@@ -96,31 +66,30 @@ def show_devices_info():
 def show_devices_online():
     try:
         print("DevicesOnline")
-        columnWidth = 20
+        columnWidth = 25
         results = []
         connection = pymysql.connect(**DB_CONFIGS['devices0'])
         cursor = connection.cursor()
         cursor.execute(
-            "SELECT serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, longitude, latitude, memory_usage FROM devices_info WHERE last_update >= DATE_SUB(NOW(), INTERVAL 30 SECOND)")
+            "SELECT serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, memory_usage, location FROM devices_info WHERE last_update >= DATE_SUB(NOW(), INTERVAL 60 SECOND)")
         results += cursor.fetchall()
         connection = pymysql.connect(**DB_CONFIGS['devices1'])
         cursor = connection.cursor()
         cursor.execute(
-            "SELECT serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, longitude, latitude, memory_usage FROM devices_info WHERE last_update >= DATE_SUB(NOW(), INTERVAL 30 SECOND)")
+            "SELECT serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, memory_usage, location FROM devices_info WHERE last_update >= DATE_SUB(NOW(), INTERVAL 60 SECOND)")
         results += cursor.fetchall()
         column_names = [desc[0] for desc in cursor.description]
         results_dict = alter_results_to_dict(results, column_names)
-        for i in range(5):
-            if (i != 4):
+        for i in range(4):
+            if (i != 3):
                 print(column_names[i].ljust(columnWidth), end='')
             else:
                 print(column_names[i].ljust(columnWidth))
         for i in range(len(results)):
             print(str(results_dict[i]['serial_number']).ljust(columnWidth), end='')
             print(str(results_dict[i]['minutes_online']).ljust(columnWidth), end='')
-            print(str(results_dict[i]['longitude']).ljust(columnWidth), end='')
-            print(str(results_dict[i]['latitude']).ljust(columnWidth), end='')
-            print(str(results_dict[i]['memory_usage']).ljust(columnWidth))
+            print(str(results_dict[i]['memory_usage']).ljust(columnWidth), end='')
+            print(str(results_dict[i]['location']).ljust(columnWidth))
         return results
     except Exception as e:
         return str(e)
@@ -260,52 +229,21 @@ def set_limitation():
             connection.close()
 
 
-fence = ["district", "福田区"]
-
-
 def geographic_fence():
     device_serial_number = input("Device to set geographic fence:\n")
+    geo_fence = input("Geography fence:\n")
     if (device_serial_number != "-1"):
         try:
             connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM devices_info WHERE serial_number = %s",
-                           (device_serial_number))
-            results = cursor.fetchall()
-            column_names = [desc[0] for desc in cursor.description]
-            results_dict = alter_results_to_dict(results, column_names)
-            location = reverse_geocode(float(results_dict[0]['longitude']),
-                                       float(results_dict[0]['latitude']))
-            print("Current location: " + str(location))
-            print("Fence: " + str(fence))
-            process = "n"
-            if location[fence[0]] != fence[1]:
-                print("Device isn't in designated area")
-                process = input("Process? (y/n)")
-                if (process == "y"):
-                    if location[fence[0]] != fence[1]:
-                        cursor.execute("INSERT INTO reboot (serial_number) VALUES (%s)",
-                                       (device_serial_number))
-                        connection.commit()
-                        cursor.execute("UPDATE devices_info SET limitation = %s WHERE serial_number = %s"
-                                       , ("3", device_serial_number));
-                        connection.commit()
-            else:
-                print("Device already in designated area")
-                if results_dict[0]['limitation'] == "3":
-                    cursor.execute("INSERT INTO reboot (serial_number, processed) VALUES (%s, 0)",
-                                   (device_serial_number))
-                    connection.commit()
-                    cursor.execute("UPDATE devices_info SET limitation = %s WHERE serial_number = %s"
-                                   , ("0", device_serial_number));
-                    connection.commit()
+            cursor.execute("UPDATE devices_info SET geo_fence = %s WHERE serial_number = %s"
+                           , (geo_fence, device_serial_number));
+            connection.commit()
         except Exception as e:
             return str(e)
         finally:
             cursor.close()
             connection.close()
-
-
 while (True):
     print("1 to print all devices\n"
           "2 to print devices online, online time length, location\n"
