@@ -4,18 +4,22 @@ from consistent_hash import ConsistentHash
 import aiomysql
 from pydantic import BaseModel
 
+# 测试用下载链接
 # https://downv6.qq.com/qqweb/QQ_1/android_apk/Android_9.2.0_64.apk
 # https://dldir1.qq.com/weixin/android/weixin8061android2880_0x28003d34_arm64.apk
 
+# 配置服务器环境
 # apt install mysql-server
 # sudo mysql_secure_installation
-
 # apt install python3.12-venv
 # python3 -m venv /home/python3
 # source /home/python3/bin/activate
 
+# 启动/关闭服务器
 # nohup uvicorn app:app --host 0.0.0.0 --port 5000 --workers=6 --loop uvloop > /dev/null 2>&1 &
 # pkill -f "uvicorn app:app"
+
+# 运行压力测试
 # python -m locust -f stress_test.py
 app = FastAPI()
 DB_spliter = ConsistentHash(["devices0", "devices1"],
@@ -26,14 +30,14 @@ DB_CONFIGS = {
         'host': 'localhost',
         'user': 'proxy_user',
         'password': password,
-        # 'port': 6033,
+         # 'port': 6033 需配置Proxysql
         'db': 'devices0'
     },
     'devices1': {
         'host': 'localhost',
         'user': 'proxy_user',
         'password': password,
-        # 'port': 6033,
+         # 'port': 6033 需配置Proxysql
         'db': 'devices1'
     }
 }
