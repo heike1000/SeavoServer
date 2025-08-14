@@ -30,14 +30,14 @@ DB_CONFIGS = {
         'host': 'localhost',
         'user': 'proxy_user',
         'password': password,
-         # 'port': 6033 需配置Proxysql
+        # 'port': 6033 需配置Proxysql
         'db': 'devices0'
     },
     'devices1': {
         'host': 'localhost',
         'user': 'proxy_user',
         'password': password,
-         # 'port': 6033 需配置Proxysql
+        # 'port': 6033 需配置Proxysql
         'db': 'devices1'
     }
 }
@@ -80,6 +80,12 @@ def get_db_pool(serial_number: str) -> aiomysql.Pool:
     return pools[db_name]
 
 
+# 失败情况统一返回格式（所有接口）：
+# HTTP 500 错误，返回 {"status": "failure", "error": str(e)}
+
+# 功能：检查设备是否需要重启
+# 参数：serial_number - 设备序列号
+# 返回值：{"status": "success", "reboot": True/False}，True表示需要重启
 @app.get("/api/reboot")
 async def get_reboot_command(serial_number: str = Query(...)):
     pool = get_db_pool(serial_number)
@@ -114,6 +120,9 @@ async def get_reboot_command(serial_number: str = Query(...)):
                 )
 
 
+# 功能：获取设备需要安装的应用下载链接
+# 参数：serial_number - 设备序列号
+# 返回值：{"status": "success", "download_url": url}，url为None表示没有需要安装的应用
 @app.get("/api/install")
 async def get_apps_to_install(serial_number: str = Query(...)):
     pool = get_db_pool(serial_number)
@@ -152,6 +161,9 @@ async def get_apps_to_install(serial_number: str = Query(...)):
                 )
 
 
+# 功能：获取设备需要卸载的应用包名
+# 参数：serial_number - 设备序列号
+# 返回值：{"status": "success", "package_name": name}，name为None表示没有需要卸载的应用
 @app.get("/api/uninstall")
 async def get_apps_to_uninstall(serial_number: str = Query(...)):
     pool = get_db_pool(serial_number)
@@ -190,11 +202,12 @@ async def get_apps_to_uninstall(serial_number: str = Query(...)):
                 )
 
 
+#功能：注册新设备或检查设备是否已注册
+#参数：serial_number - 设备序列号, fw_version - 固件版本
+#返回值：{"status": "success", "is_registered": True/False, "limitation": "0"/"1"/"2"}，limitation为三种限制等级
 class RegisterDeviceRequest(BaseModel):
     serial_number: str
     fw_version: str
-
-
 @app.post("/api/register")
 async def register_device(data: RegisterDeviceRequest):
     pool = get_db_pool(data.serial_number)
@@ -227,13 +240,14 @@ async def register_device(data: RegisterDeviceRequest):
                 )
 
 
+#功能：更新设备状态信息（位置、内存使用等）
+#参数：serial_number - 设备序列号, waked - 是否唤醒("1"/"0"), location - 位置信息, memory_usage - 内存使用情况
+#返回值：{"status": "success", "geo_fence": str}，返回设备的电子围栏信息
 class UpdateStateRequest(BaseModel):
     serial_number: str
     waked: str
     location: str
     memory_usage: str
-
-
 @app.post("/api/update_state")
 async def update_state(data: UpdateStateRequest):
     pool = get_db_pool(data.serial_number)
@@ -241,12 +255,13 @@ async def update_state(data: UpdateStateRequest):
         async with conn.cursor() as cursor:
             try:
                 await conn.begin()
+                #waked为"1"时会更新waked_at字段
                 if data.waked == "1":
                     sql = """
                           UPDATE devices_info
                           SET waked_at     = CURRENT_TIMESTAMP,
                               last_update  = CURRENT_TIMESTAMP,
-                              location    = %s,
+                              location     = %s,
                               memory_usage = %s
                           WHERE serial_number = %s \
                           """
@@ -254,7 +269,7 @@ async def update_state(data: UpdateStateRequest):
                     sql = """
                           UPDATE devices_info
                           SET last_update  = CURRENT_TIMESTAMP,
-                              location    = %s,
+                              location     = %s,
                               memory_usage = %s
                           WHERE serial_number = %s \
                           """
@@ -280,6 +295,9 @@ async def update_state(data: UpdateStateRequest):
                 )
 
 
+#功能：获取设备待处理的消息
+#参数：serial_number - 设备序列号
+#返回值：{"status": "success", "messages": [{"id": id, "content": msg},...]}
 @app.get("/api/messages")
 async def get_messages(serial_number: str = Query(...)):
     pool = get_db_pool(serial_number)
@@ -322,11 +340,12 @@ async def get_messages(serial_number: str = Query(...)):
                 )
 
 
+#功能：更新设备上安装的应用列表
+#参数：serial_number - 设备序列号, apps - 应用名称列表
+#返回值：{"status": "success"}
 class UpdateAppListRequest(BaseModel):
     serial_number: str
     apps: list[str]
-
-
 @app.post("/api/update_app_list")
 async def update_app_list(data: UpdateAppListRequest):
     pool = get_db_pool(data.serial_number)
@@ -358,6 +377,9 @@ async def update_app_list(data: UpdateAppListRequest):
                 )
 
 
+#功能：获取设备启动时需要自动启动的应用
+#参数：serial_number - 设备序列号
+#返回值：{"status": "success", "app_name": None/name, "kiosk": None/"1"/"0"}
 @app.get("/api/app_on_start")
 async def get_app_to_start_on_reboot(serial_number: str = Query(...)):
     pool = get_db_pool(serial_number)
