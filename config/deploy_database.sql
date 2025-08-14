@@ -6,7 +6,7 @@ CREATE TABLE devices_info
     fw_version    VARCHAR(256) NOT NULL,
     waked_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_update   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    location     VARCHAR(128) NOT NULL DEFAULT '0',
+    location      VARCHAR(128) NOT NULL DEFAULT '0',
     geo_fence     VARCHAR(128) NOT NULL DEFAULT '0',
     limitation    VARCHAR(4)   NOT NULL DEFAULT '0',
     memory_usage  VARCHAR(128) NOT NULL DEFAULT '0/0'
@@ -70,7 +70,7 @@ CREATE TABLE devices_info
     fw_version    VARCHAR(256) NOT NULL,
     waked_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_update   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    location     VARCHAR(128) NOT NULL DEFAULT '0',
+    location      VARCHAR(128) NOT NULL DEFAULT '0',
     geo_fence     VARCHAR(128) NOT NULL DEFAULT '0',
     limitation    VARCHAR(4)   NOT NULL DEFAULT '0',
     memory_usage  VARCHAR(128) NOT NULL DEFAULT '0/0'

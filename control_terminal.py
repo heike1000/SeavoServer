@@ -32,6 +32,8 @@ def alter_results_to_dict(results, column_name):
     return results_dict
 
 
+# 功能：从两个数据库中获取所有设备的基本信息（序列号和固件版本）
+# 简化SQL：SELECT * FROM devices_info
 def show_devices_info():
     try:
         print("DevicesInfo")
@@ -63,6 +65,8 @@ def show_devices_info():
         connection.close()
 
 
+# 功能：获取当前在线的设备信息（序列号、在线时长、内存使用率和位置）
+# 简化SQL：serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, memory_usage, location
 def show_devices_online():
     try:
         print("DevicesOnline")
@@ -98,6 +102,8 @@ def show_devices_online():
         connection.close()
 
 
+# 功能：发布应用安装任务到指定设备
+# 简化SQL：INSERT INTO apps_to_install (serial_number, download_url)
 def publish_app_to_install():
     device_serial_number = input("Device to download:\n")
     if (device_serial_number != "-1"):
@@ -115,6 +121,8 @@ def publish_app_to_install():
             connection.close()
 
 
+# 功能：发布应用卸载任务到指定设备
+# 简化SQL：INSERT INTO apps_to_uninstall (serial_number, package_name)
 def publish_app_to_uninstall():
     device_serial_number = input("Device to uninstall:\n")
     if (device_serial_number != "-1"):
@@ -132,6 +140,8 @@ def publish_app_to_uninstall():
             connection.close()
 
 
+# 功能：发布设备重启任务
+# 简化SQL：INSERT INTO reboot (serial_number)
 def reboot_device():
     device_serial_number = input("Device to reboot:\n")
     if (device_serial_number != "-1"):
@@ -148,6 +158,9 @@ def reboot_device():
             connection.close()
 
 
+# 功能：设置或取消应用在设备重启时自动启动
+# 简化SQL：REPLACE INTO app_to_start_on_reboot (serial_number, kiosk, app_name)
+# 简化SQL：delete from app_to_start_on_reboot WHERE serial_number = %s
 def publish_app_to_start_on_reboot():
     device_serial_number = input("Device to set:\n")
     if (device_serial_number != "-1"):
@@ -173,6 +186,8 @@ def publish_app_to_start_on_reboot():
             connection.close()
 
 
+# 功能：获取指定设备上安装的应用列表
+# 简化SQL：SELECT * FROM app_list
 def get_app_list():
     columnWidth = 25
     device_serial_number = input("Device to get App list:\n")
@@ -195,6 +210,8 @@ def get_app_list():
             connection.close()
 
 
+# 功能：发送消息到指定设备
+# 简化SQL：INSERT INTO messages (serial_number, message)
 def send_message():
     device_serial_number = input("Device to send:\n")
     if (device_serial_number != "-1"):
@@ -212,6 +229,8 @@ def send_message():
             connection.close()
 
 
+# 功能：设置设备的限制模式（无限制、关闭限制或锁定）
+# 简化SQL：UPDATE devices_info SET limitation = %s WHERE serial_number = %s
 def set_limitation():
     device_serial_number = input("Device to set limitation:\n")
     mode = input("0 - no limitation, 1 - close limitation, 2 - lock:\n")
@@ -229,6 +248,8 @@ def set_limitation():
             connection.close()
 
 
+# 功能：设置设备的地理围栏
+# 简化SQL：UPDATE devices_info SET geo_fence = %s WHERE serial_number = %s
 def geographic_fence():
     device_serial_number = input("Device to set geographic fence:\n")
     geo_fence = input("Geography fence:\n")
@@ -244,6 +265,8 @@ def geographic_fence():
         finally:
             cursor.close()
             connection.close()
+
+
 while (True):
     print("1 to print all devices\n"
           "2 to print devices online, online time length, location\n"
