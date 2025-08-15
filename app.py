@@ -12,11 +12,11 @@ from pydantic import BaseModel
 # apt install mysql-server
 # sudo mysql_secure_installation
 # apt install python3.12-venv
-# python3 -m venv /home/python3
+# python3 -m venv/home/python3
 # source /home/python3/bin/activate
 
 # 启动/关闭服务器
-# nohup uvicorn app:app --host 0.0.0.0 --port 5000 --workers=6 --loop uvloop > /dev/null 2>&1 &
+# nohup uvicorn app:app --host 0.0.0.0 --port 5000 --workers=6 --loop uvloop --http httptools > /dev/null 2>&1 &
 # pkill -f "uvicorn app:app"
 
 # 运行压力测试
@@ -285,7 +285,7 @@ async def update_state(data: UpdateStateRequest):
                 )
                 geo_fence = await cursor.fetchone()
                 return {"status": "success",
-                        "geo_fence": geo_fence[0]}
+                        "geo_fence": geo_fence[0] if geo_fence else "0"}
             except Exception as e:
                 await conn.rollback()
                 raise HTTPException(

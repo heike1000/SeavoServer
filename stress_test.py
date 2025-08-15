@@ -15,9 +15,8 @@ class DeviceBehavior(TaskSet):
         return {
             "update_state": {
                 "serial_number": serial_number,
-                "waked": random.choice([0, 1]),
-                "longitude": str(random.uniform(-180, 180)),
-                "latitude": str(random.uniform(-90, 90)),
+                "waked": random.choice(["0", "1"]),
+                "location": "福田区",
                 "memory_usage": f"{random.randint(1, 4)}/4"
             },
             "update_app_list": {
