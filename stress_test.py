@@ -7,6 +7,7 @@ import string
 def generate_serial_numbers(count):
     return [''.join(random.choices(string.hexdigits.lower(), k=16)) for _ in range(count)]
 
+
 SERIAL_NUMBERS = generate_serial_numbers(10000)
 
 

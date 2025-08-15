@@ -131,5 +131,4 @@ GRANT ALL PRIVILEGES ON devices0.* TO
 'proxy_user'@'localhost';
 GRANT ALL PRIVILEGES ON devices1.* TO
 'proxy_user'@'localhost';
-FLUSH
-PRIVILEGES;
+FLUSH PRIVILEGES;
