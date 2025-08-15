@@ -126,8 +126,7 @@ CREATE TABLE app_list
     INDEX         idx_id_device (serial_number)
 );
 
-CREATE
-USER IF NOT EXISTS 'proxy_user'@'localhost' IDENTIFIED BY '83929922Wr*';
+CREATE USER 'proxy_user'@'localhost' IDENTIFIED BY 'YOUR PASSWORD';
 GRANT ALL PRIVILEGES ON devices0.* TO
 'proxy_user'@'localhost';
 GRANT ALL PRIVILEGES ON devices1.* TO

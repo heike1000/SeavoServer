@@ -24,7 +24,7 @@ from pydantic import BaseModel
 app = FastAPI()
 DB_spliter = ConsistentHash(["devices0", "devices1"],
                             [100, 100])
-password = '83929922Wr*'
+password = 'YOUR PASSWORD'
 DB_CONFIGS = {
     'devices0': {
         'host': 'localhost',

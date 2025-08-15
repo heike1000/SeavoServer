@@ -2,7 +2,7 @@ import sys
 import pymysql
 from consistent_hash import ConsistentHash
 
-password = '83929922Wr*'
+password = 'YOUR PASSWORD'
 
 DB_spliter = ConsistentHash(["devices0", "devices1"],
                             [100, 100])
