@@ -1,6 +1,5 @@
-import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
-from consistent_hash import ConsistentHash
 import aiomysql
 from pydantic import BaseModel
 
@@ -12,7 +11,7 @@ from pydantic import BaseModel
 # apt install mysql-server
 # sudo mysql_secure_installation
 # apt install python3.12-venv
-# python3 -m venv/home/python3
+# python3 -m venv /home/python3
 # source /home/python3/bin/activate
 
 # 启动/关闭服务器
@@ -21,63 +20,33 @@ from pydantic import BaseModel
 
 # 运行压力测试
 # python -m locust -f stress_test.py
-app = FastAPI()
-DB_spliter = ConsistentHash(["devices0", "devices1"],
-                            [100, 100])
-password = 'YOUR PASSWORD'
-DB_CONFIGS = {
-    'devices0': {
-        'host': 'localhost',
-        'user': 'proxy_user',
-        'password': password,
-        # 'port': 6033 需配置Proxysql
-        'db': 'devices0'
-    },
-    'devices1': {
-        'host': 'localhost',
-        'user': 'proxy_user',
-        'password': password,
-        # 'port': 6033 需配置Proxysql
-        'db': 'devices1'
-    }
+password = '83929922Wr*'
+config = {
+    'host': 'localhost',
+    'user': 'proxy_user',
+    'password': password,
+    'db': 'devices',
+    'minsize': 12,
+    'maxsize': 30,
+    'autocommit': False
 }
+pool = None
 
 
-async def create_pool(config):
-    return await aiomysql.create_pool(
-        host=config['host'],
-        user=config['user'],
-        password=config['password'],
-        db=config['db'],
-        minsize=12,
-        maxsize=30,
-        pool_recycle=1800,
-        connect_timeout=10,
-        autocommit=False
-    )
+def get_db_pool():
+    return pool
 
 
-pools = {}
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global pool
+    pool = await aiomysql.create_pool(**config)
+    yield
+    pool.close()
+    await pool.wait_closed()
 
 
-@app.on_event("startup")
-async def startup():
-    # 初始化所有连接池
-    for db_name, config in DB_CONFIGS.items():
-        pools[db_name] = await create_pool(config)
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    # 关闭所有连接池
-    for pool in pools.values():
-        pool.close()
-        await pool.wait_closed()
-
-
-def get_db_pool(serial_number: str) -> aiomysql.Pool:
-    db_name = DB_spliter.get_database(serial_number)
-    return pools[db_name]
+app = FastAPI(lifespan=lifespan)
 
 
 # 失败情况统一返回格式（所有接口）：
@@ -88,7 +57,7 @@ def get_db_pool(serial_number: str) -> aiomysql.Pool:
 # 返回值：{"status": "success", "reboot": True/False}，True表示需要重启
 @app.get("/api/reboot")
 async def get_reboot_command(serial_number: str = Query(...)):
-    pool = get_db_pool(serial_number)
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
@@ -125,7 +94,7 @@ async def get_reboot_command(serial_number: str = Query(...)):
 # 返回值：{"status": "success", "download_url": url}，url为None表示没有需要安装的应用
 @app.get("/api/install")
 async def get_apps_to_install(serial_number: str = Query(...)):
-    pool = get_db_pool(serial_number)
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
@@ -166,7 +135,7 @@ async def get_apps_to_install(serial_number: str = Query(...)):
 # 返回值：{"status": "success", "package_name": name}，name为None表示没有需要卸载的应用
 @app.get("/api/uninstall")
 async def get_apps_to_uninstall(serial_number: str = Query(...)):
-    pool = get_db_pool(serial_number)
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
@@ -212,7 +181,7 @@ class RegisterDeviceRequest(BaseModel):
 
 @app.post("/api/register")
 async def register_device(data: RegisterDeviceRequest):
-    pool = get_db_pool(data.serial_number)
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
@@ -254,7 +223,7 @@ class UpdateStateRequest(BaseModel):
 
 @app.post("/api/update_state")
 async def update_state(data: UpdateStateRequest):
-    pool = get_db_pool(data.serial_number)
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
@@ -289,8 +258,9 @@ async def update_state(data: UpdateStateRequest):
                 )
                 geo_fence = await cursor.fetchone()
                 return {"status": "success",
-                        "geo_fence": geo_fence[0] if geo_fence else "0"}
+                        "geo_fence": geo_fence[0] if geo_fence else None}
             except Exception as e:
+                print(str(e))
                 await conn.rollback()
                 raise HTTPException(
                     status_code=500,
@@ -304,7 +274,7 @@ async def update_state(data: UpdateStateRequest):
 # 返回值：{"status": "success", "messages": [{"id": id, "content": msg},...]}
 @app.get("/api/messages")
 async def get_messages(serial_number: str = Query(...)):
-    pool = get_db_pool(serial_number)
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
@@ -354,7 +324,7 @@ class UpdateAppListRequest(BaseModel):
 
 @app.post("/api/update_app_list")
 async def update_app_list(data: UpdateAppListRequest):
-    pool = get_db_pool(data.serial_number)
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
@@ -388,7 +358,7 @@ async def update_app_list(data: UpdateAppListRequest):
 # 返回值：{"status": "success", "app_name": None/name, "kiosk": None/"1"/"0"}
 @app.get("/api/app_on_start")
 async def get_app_to_start_on_reboot(serial_number: str = Query(...)):
-    pool = get_db_pool(serial_number)
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
@@ -412,12 +382,3 @@ async def get_app_to_start_on_reboot(serial_number: str = Query(...)):
                     detail={"status": "failure",
                             "error": str(e)}
                 )
-
-
-if __name__ == "__main__":
-    uvicorn.run(
-        "app:app",
-        host="0.0.0.0",
-        port=5000,
-        workers=1
-    )

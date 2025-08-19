@@ -8,7 +8,7 @@ def generate_serial_numbers(count):
     return [''.join(random.choices(string.hexdigits.lower(), k=16)) for _ in range(count)]
 
 
-SERIAL_NUMBERS = generate_serial_numbers(10000)
+SERIAL_NUMBERS = generate_serial_numbers(100000)
 
 
 class DeviceBehavior(TaskSet):
@@ -30,48 +30,48 @@ class DeviceBehavior(TaskSet):
             }
         }
 
-    # @task(5)
-    # def register(self):
-    #     self.serial_number = random.choice(SERIAL_NUMBERS)
-    #     data = self.get_test_data(self.serial_number)["register"]
-    #     self.client.post("/api/register", json=data)
+    def make_request(self, method, path, **kwargs):
+        headers = kwargs.get("headers", {})
+        headers["Connection"] = "close"
+        kwargs["headers"] = headers
+        return getattr(self.client, method)(path, **kwargs)
 
     @task(10)
     def update_state(self):
-        self.serial_number = random.choice(SERIAL_NUMBERS)
-        data = self.get_test_data(self.serial_number)["update_state"]
-        self.client.post("/api/update_state", json=data)
+        serial_number = random.choice(SERIAL_NUMBERS)
+        data = self.get_test_data(serial_number)["update_state"]
+        self.make_request("post", "/api/update_state", json=data)
 
     @task(10)
     def update_app_list(self):
-        self.serial_number = random.choice(SERIAL_NUMBERS)
-        data = self.get_test_data(self.serial_number)["update_app_list"]
-        self.client.post("/api/update_app_list", json=data)
+        serial_number = random.choice(SERIAL_NUMBERS)
+        data = self.get_test_data(serial_number)["update_app_list"]
+        self.make_request("post", "/api/update_app_list", json=data)
 
     @task(10)
     def get_messages(self):
-        self.serial_number = random.choice(SERIAL_NUMBERS)
-        self.client.get("/api/messages", params={"serial_number": self.serial_number})
+        serial_number = random.choice(SERIAL_NUMBERS)
+        self.make_request("get", "/api/messages", params={"serial_number": serial_number})
 
     @task(10)
     def reboot(self):
-        self.serial_number = random.choice(SERIAL_NUMBERS)
-        self.client.get("/api/reboot", params={"serial_number": self.serial_number})
+        serial_number = random.choice(SERIAL_NUMBERS)
+        self.make_request("get", "/api/reboot", params={"serial_number": serial_number})
 
     @task(10)
     def install(self):
-        self.serial_number = random.choice(SERIAL_NUMBERS)
-        self.client.get("/api/install", params={"serial_number": self.serial_number})
+        serial_number = random.choice(SERIAL_NUMBERS)
+        self.make_request("get", "/api/install", params={"serial_number": serial_number})
 
     @task(10)
     def uninstall(self):
-        self.serial_number = random.choice(SERIAL_NUMBERS)
-        self.client.get("/api/uninstall", params={"serial_number": self.serial_number})
+        serial_number = random.choice(SERIAL_NUMBERS)
+        self.make_request("get", "/api/uninstall", params={"serial_number": serial_number})
 
     @task(10)
     def app_on_start(self):
-        self.serial_number = random.choice(SERIAL_NUMBERS)
-        self.client.get("/api/app_on_start", params={"serial_number": self.serial_number})
+        serial_number = random.choice(SERIAL_NUMBERS)
+        self.make_request("get", "/api/app_on_start", params={"serial_number": serial_number})
 
 
 class DeviceUser(FastHttpUser):

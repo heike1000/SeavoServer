@@ -4,6 +4,8 @@ from bisect import bisect
 import random
 
 
+# This module has been deprecated
+
 class ConsistentHash:
     def __init__(self, databases, capacities):
         self.ring_database = []

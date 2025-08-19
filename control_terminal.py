@@ -1,24 +1,12 @@
 import sys
 import pymysql
-from consistent_hash import ConsistentHash
 
-password = 'YOUR PASSWORD'
-
-DB_spliter = ConsistentHash(["devices0", "devices1"],
-                            [100, 100])
-DB_CONFIGS = {
-    'devices0': {
-        'host': 'localhost',
-        'user': 'proxy_user',
-        'password': password,
-        'database': 'devices0',
-    },
-    'devices1': {
-        'host': 'localhost',
-        'user': 'proxy_user',
-        'password': password,
-        'database': 'devices1',
-    }
+password = '83929922Wr*'
+config = {
+    'host': 'localhost',
+    'user': 'proxy_user',
+    'password': password,
+    'database': 'devices'
 }
 
 
@@ -38,15 +26,10 @@ def show_devices_info():
     try:
         print("DevicesInfo")
         columnWidth = 25
-        results = []
-        connection = pymysql.connect(**DB_CONFIGS['devices0'])
+        connection = pymysql.connect(**config)
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM devices_info")
-        results += cursor.fetchall()
-        connection = pymysql.connect(**DB_CONFIGS['devices1'])
-        cursor = connection.cursor()
-        cursor.execute("SELECT * FROM devices_info")
-        results += cursor.fetchall()
+        results = cursor.fetchall()
         column_names = [desc[0] for desc in cursor.description]
         results_dict = alter_results_to_dict(results, column_names)
         for i in range(2):
@@ -71,17 +54,11 @@ def show_devices_online():
     try:
         print("DevicesOnline")
         columnWidth = 25
-        results = []
-        connection = pymysql.connect(**DB_CONFIGS['devices0'])
+        connection = pymysql.connect(**config)
         cursor = connection.cursor()
         cursor.execute(
             "SELECT serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, memory_usage, location FROM devices_info WHERE last_update >= DATE_SUB(NOW(), INTERVAL 60 SECOND)")
-        results += cursor.fetchall()
-        connection = pymysql.connect(**DB_CONFIGS['devices1'])
-        cursor = connection.cursor()
-        cursor.execute(
-            "SELECT serial_number, TIMESTAMPDIFF(MINUTE, waked_at, last_update) as minutes_online, memory_usage, location FROM devices_info WHERE last_update >= DATE_SUB(NOW(), INTERVAL 60 SECOND)")
-        results += cursor.fetchall()
+        results = cursor.fetchall()
         column_names = [desc[0] for desc in cursor.description]
         results_dict = alter_results_to_dict(results, column_names)
         for i in range(4):
@@ -109,7 +86,7 @@ def publish_app_to_install():
     if (device_serial_number != "-1"):
         try:
             website = input("App's download_url:\n")
-            connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
+            connection = pymysql.connect(**config)
             cursor = connection.cursor()
             cursor.execute("INSERT INTO apps_to_install (serial_number, download_url) VALUES (%s, %s)",
                            (device_serial_number, website))
@@ -128,7 +105,7 @@ def publish_app_to_uninstall():
     if (device_serial_number != "-1"):
         try:
             packageName = input("App's package name:\n")
-            connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
+            connection = pymysql.connect(**config)
             cursor = connection.cursor()
             cursor.execute("INSERT INTO apps_to_uninstall (serial_number, package_name) VALUES (%s, %s)",
                            (device_serial_number, packageName))
@@ -146,7 +123,7 @@ def reboot_device():
     device_serial_number = input("Device to reboot:\n")
     if (device_serial_number != "-1"):
         try:
-            connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
+            connection = pymysql.connect(**config)
             cursor = connection.cursor()
             cursor.execute("INSERT INTO reboot (serial_number) VALUES (%s)",
                            (device_serial_number))
@@ -169,7 +146,7 @@ def publish_app_to_start_on_reboot():
             appName = input("App to start on reboot:\n")
             kiosk = input("1 to kiosk, 0 not to:\n")
         try:
-            connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
+            connection = pymysql.connect(**config)
             cursor = connection.cursor()
             if mode == "1":
                 cursor.execute(
@@ -193,7 +170,7 @@ def get_app_list():
     device_serial_number = input("Device to get App list:\n")
     if (device_serial_number != "-1"):
         try:
-            connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
+            connection = pymysql.connect(**config)
             cursor = connection.cursor()
             cursor.execute("SELECT * FROM app_list WHERE serial_number = %s",
                            (device_serial_number))
@@ -217,7 +194,7 @@ def send_message():
     if (device_serial_number != "-1"):
         content = input("Message to send:\n")
         try:
-            connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
+            connection = pymysql.connect(**config)
             cursor = connection.cursor()
             cursor.execute("INSERT INTO messages (serial_number, message) VALUES (%s, %s)",
                            (device_serial_number, content))
@@ -236,7 +213,7 @@ def set_limitation():
     mode = input("0 - no limitation, 1 - close limitation, 2 - lock:\n")
     if (device_serial_number != "-1" and (mode == "0" or mode == "1" or mode == "2")):
         try:
-            connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
+            connection = pymysql.connect(**config)
             cursor = connection.cursor()
             cursor.execute("UPDATE devices_info SET limitation = %s WHERE serial_number = %s"
                            , (mode, device_serial_number));
@@ -255,7 +232,7 @@ def geographic_fence():
     geo_fence = input("Geography fence:\n")
     if (device_serial_number != "-1"):
         try:
-            connection = pymysql.connect(**DB_CONFIGS[DB_spliter.get_database(device_serial_number)])
+            connection = pymysql.connect(**config)
             cursor = connection.cursor()
             cursor.execute("UPDATE devices_info SET geo_fence = %s WHERE serial_number = %s"
                            , (geo_fence, device_serial_number));
