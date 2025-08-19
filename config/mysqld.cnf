@@ -43,7 +43,7 @@ thread_cache_size       = 100
 # the first time they are touched
 myisam-recover-options  = BACKUP
 
-max_connections        = 200
+max_connections        = 500
 
 # table_open_cache       = 4000
 

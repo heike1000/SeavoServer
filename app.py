@@ -24,8 +24,8 @@ config = {
     'user': 'proxy_user',
     'password': password,
     'db': 'devices',
-    'minsize': 12,
-    'maxsize': 30,
+    'minsize': 16,
+    'maxsize': 40,
     'autocommit': False
 }
 pool = None
@@ -83,8 +83,7 @@ async def get_reboot_command(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)}
-                )
+                            "error": str(e)})
 
 
 # 功能：获取设备需要安装的应用下载链接
@@ -124,8 +123,7 @@ async def get_apps_to_install(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)}
-                )
+                            "error": str(e)})
 
 
 # 功能：获取设备需要卸载的应用包名
@@ -165,8 +163,7 @@ async def get_apps_to_uninstall(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)}
-                )
+                            "error": str(e)})
 
 
 # 功能：注册新设备或检查设备是否已注册
@@ -205,8 +202,7 @@ async def register_device(data: RegisterDeviceRequest,
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)}
-                )
+                            "error": str(e)})
 
 
 # 功能：更新设备状态信息（位置、内存使用等）
@@ -258,13 +254,11 @@ async def update_state(data: UpdateStateRequest,
                 return {"status": "success",
                         "geo_fence": geo_fence[0] if geo_fence else None}
             except Exception as e:
-                print(str(e))
                 await conn.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)}
-                )
+                            "error": str(e)})
 
 
 # 功能：获取设备待处理的消息
@@ -308,8 +302,7 @@ async def get_messages(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)}
-                )
+                            "error": str(e)})
 
 
 # 功能：更新设备上安装的应用列表
@@ -334,7 +327,7 @@ async def update_app_list(data: UpdateAppListRequest,
                                      """, (serial_number))
                 insert_sql = """
                              INSERT INTO app_list (serial_number, app_name)
-                             VALUES (%s, %s) \
+                             VALUES (%s, %s)
                              """
                 await cursor.executemany(
                     insert_sql,
@@ -347,8 +340,7 @@ async def update_app_list(data: UpdateAppListRequest,
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)}
-                )
+                            "error": str(e)})
 
 
 # 功能：获取设备启动时需要自动启动的应用
@@ -378,8 +370,7 @@ async def get_app_to_start_on_reboot(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)}
-                )
+                            "error": str(e)})
 
 
 # 在windows上测试
