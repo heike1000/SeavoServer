@@ -4,10 +4,12 @@ import pymysql
 # 测试用下载链接
 # https://downv6.qq.com/qqweb/QQ_1/android_apk/Android_9.2.0_64.apk
 # https://dldir1.qq.com/weixin/android/weixin8061android2880_0x28003d34_arm64.apk
+
+
 password = '83929922Wr*'
 config = {
     'host': 'localhost',
-    'user': 'proxy_user',
+    'user': 'root',
     'password': password,
     'database': 'devices'
 }

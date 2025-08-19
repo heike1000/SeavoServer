@@ -1,5 +1,3 @@
-from contextlib import asynccontextmanager
-
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 import aiomysql
@@ -9,7 +7,7 @@ from pydantic import BaseModel
 # apt install mysql-server
 # sudo mysql_secure_installation
 # apt install python3.12-venv
-# python3 -m venv /home/python3
+# python3 -m venv/home/python3
 # source /home/python3/bin/activate
 
 # 启动/关闭服务器
@@ -18,33 +16,46 @@ from pydantic import BaseModel
 
 # 运行压力测试
 # python -m locust -f stress_test.py
+app = FastAPI()
 password = '83929922Wr*'
 config = {
     'host': 'localhost',
-    'user': 'proxy_user',
+    'user': 'root',
     'password': password,
-    'db': 'devices',
-    'minsize': 16,
-    'maxsize': 40,
-    'autocommit': False
+    'db': 'devices'
 }
 pool = None
 
 
-def get_db_pool():
-    return pool
+async def create_pool(config):
+    return await aiomysql.create_pool(
+        host=config['host'],
+        user=config['user'],
+        password=config['password'],
+        db=config['db'],
+        minsize=30,
+        maxsize=40,
+        pool_recycle=1800,
+        connect_timeout=10,
+        autocommit=False
+    )
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+@app.on_event("startup")
+async def startup():
     global pool
-    pool = await aiomysql.create_pool(**config)
-    yield
+    pool = await create_pool(config)
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    global pool
     pool.close()
     await pool.wait_closed()
 
 
-app = FastAPI(lifespan=lifespan)
+def get_db_pool():
+    return pool
 
 
 # 失败情况统一返回格式（所有接口）：
@@ -83,7 +94,8 @@ async def get_reboot_command(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)})
+                            "error": str(e)}
+                )
 
 
 # 功能：获取设备需要安装的应用下载链接
@@ -123,7 +135,8 @@ async def get_apps_to_install(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)})
+                            "error": str(e)}
+                )
 
 
 # 功能：获取设备需要卸载的应用包名
@@ -163,7 +176,8 @@ async def get_apps_to_uninstall(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)})
+                            "error": str(e)}
+                )
 
 
 # 功能：注册新设备或检查设备是否已注册
@@ -202,7 +216,8 @@ async def register_device(data: RegisterDeviceRequest,
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)})
+                            "error": str(e)}
+                )
 
 
 # 功能：更新设备状态信息（位置、内存使用等）
@@ -252,13 +267,14 @@ async def update_state(data: UpdateStateRequest,
                 )
                 geo_fence = await cursor.fetchone()
                 return {"status": "success",
-                        "geo_fence": geo_fence[0] if geo_fence else None}
+                        "geo_fence": geo_fence[0] if geo_fence else "0"}
             except Exception as e:
                 await conn.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)})
+                            "error": str(e)}
+                )
 
 
 # 功能：获取设备待处理的消息
@@ -302,7 +318,8 @@ async def get_messages(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)})
+                            "error": str(e)}
+                )
 
 
 # 功能：更新设备上安装的应用列表
@@ -340,7 +357,8 @@ async def update_app_list(data: UpdateAppListRequest,
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)})
+                            "error": str(e)}
+                )
 
 
 # 功能：获取设备启动时需要自动启动的应用
@@ -370,13 +388,13 @@ async def get_app_to_start_on_reboot(serial_number: str = Query(...)):
                 raise HTTPException(
                     status_code=500,
                     detail={"status": "failure",
-                            "error": str(e)})
+                            "error": str(e)}
+                )
 
 
-# 在windows上测试
-if __name__ == '__main__':
+if __name__ == "__main__":
     uvicorn.run(
-        app="app:app",
+        "app:app",
         host="0.0.0.0",
         port=5000,
         workers=1

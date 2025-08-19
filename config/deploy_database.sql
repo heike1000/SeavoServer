@@ -61,7 +61,3 @@ CREATE TABLE app_list
     app_name      VARCHAR(128) NOT NULL,
     INDEX         idx_id_device (serial_number)
 );
-
-CREATE USER 'proxy_user'@'localhost' IDENTIFIED BY '83929922Wr*';
-GRANT ALL PRIVILEGES ON devices.* TO 'proxy_user'@'localhost';
-FLUSH PRIVILEGES;

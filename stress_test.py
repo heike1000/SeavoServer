@@ -7,11 +7,12 @@ import string
 def generate_serial_numbers(count):
     return [''.join(random.choices(string.hexdigits.lower(), k=16)) for _ in range(count)]
 
-SERIAL_NUMBERS = generate_serial_numbers(100)
+
+SERIAL_NUMBERS = generate_serial_numbers(10000)
 
 
 class DeviceBehavior(TaskSet):
-    def get_test_data(self, serial_number):
+    def get_test_data(self):
         return {
             "update_state": {
                 "waked": random.choice(["0", "1"]),
@@ -26,22 +27,22 @@ class DeviceBehavior(TaskSet):
             }
         }
 
-    # @task(5)
+    # @task(10)
     # def register(self):
     #     self.serial_number = random.choice(SERIAL_NUMBERS)
-    #     data = self.get_test_data(self.serial_number)["register"]
+    #     data = self.get_test_data()["register"]
     #     self.client.post("/api/register", params={"serial_number": self.serial_number}, json=data)
 
     @task(10)
     def update_state(self):
         self.serial_number = random.choice(SERIAL_NUMBERS)
-        data = self.get_test_data(self.serial_number)["update_state"]
+        data = self.get_test_data()["update_state"]
         self.client.post("/api/update_state", params={"serial_number": self.serial_number}, json=data)
 
     @task(10)
     def update_app_list(self):
         self.serial_number = random.choice(SERIAL_NUMBERS)
-        data = self.get_test_data(self.serial_number)["update_app_list"]
+        data = self.get_test_data()["update_app_list"]
         self.client.post("/api/update_app_list", params={"serial_number": self.serial_number}, json=data)
 
     @task(10)
