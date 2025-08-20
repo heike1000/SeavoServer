@@ -1,11 +1,9 @@
 from contextlib import asynccontextmanager
+
+import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 import aiomysql
 from pydantic import BaseModel
-
-# 测试用下载链接
-# https://downv6.qq.com/qqweb/QQ_1/android_apk/Android_9.2.0_64.apk
-# https://dldir1.qq.com/weixin/android/weixin8061android2880_0x28003d34_arm64.apk
 
 # 配置服务器环境
 # apt install mysql-server
@@ -175,12 +173,12 @@ async def get_apps_to_uninstall(serial_number: str = Query(...)):
 # 参数：serial_number - 设备序列号, fw_version - 固件版本
 # 返回值：{"status": "success", "is_registered": True/False, "limitation": "0"/"1"/"2"}，limitation为三种限制等级
 class RegisterDeviceRequest(BaseModel):
-    serial_number: str
     fw_version: str
 
 
 @app.post("/api/register")
-async def register_device(data: RegisterDeviceRequest):
+async def register_device(data: RegisterDeviceRequest,
+                          serial_number: str = Query(...)):
     pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
@@ -188,13 +186,13 @@ async def register_device(data: RegisterDeviceRequest):
                 await conn.begin()
                 await cursor.execute(
                     "SELECT limitation FROM devices_info WHERE serial_number = %s",
-                    (data.serial_number)
+                    (serial_number)
                 )
                 device_exists = await cursor.fetchone()
                 if not device_exists:
                     await cursor.execute(
                         "INSERT INTO devices_info (serial_number, fw_version) VALUES (%s, %s)",
-                        (data.serial_number, data.fw_version)
+                        (serial_number, data.fw_version)
                     )
                 await conn.commit()
                 return {
@@ -215,14 +213,14 @@ async def register_device(data: RegisterDeviceRequest):
 # 参数：serial_number - 设备序列号, waked - 是否唤醒("1"/"0"), location - 位置信息, memory_usage - 内存使用情况
 # 返回值：{"status": "success", "geo_fence": str}，返回设备的电子围栏信息
 class UpdateStateRequest(BaseModel):
-    serial_number: str
     waked: str
     location: str
     memory_usage: str
 
 
 @app.post("/api/update_state")
-async def update_state(data: UpdateStateRequest):
+async def update_state(data: UpdateStateRequest,
+                       serial_number: str = Query(...)):
     pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
@@ -249,12 +247,12 @@ async def update_state(data: UpdateStateRequest):
                 await cursor.execute(sql, (
                     data.location,
                     data.memory_usage,
-                    data.serial_number
+                    serial_number
                 ))
                 await conn.commit()
                 await cursor.execute(
                     "SELECT geo_fence FROM devices_info WHERE serial_number = %s",
-                    (data.serial_number)
+                    (serial_number)
                 )
                 geo_fence = await cursor.fetchone()
                 return {"status": "success",
@@ -318,12 +316,12 @@ async def get_messages(serial_number: str = Query(...)):
 # 参数：serial_number - 设备序列号, apps - 应用名称列表
 # 返回值：{"status": "success"}
 class UpdateAppListRequest(BaseModel):
-    serial_number: str
     apps: list[str]
 
 
 @app.post("/api/update_app_list")
-async def update_app_list(data: UpdateAppListRequest):
+async def update_app_list(data: UpdateAppListRequest,
+                          serial_number: str = Query(...)):
     pool = get_db_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cursor:
@@ -333,14 +331,14 @@ async def update_app_list(data: UpdateAppListRequest):
                                      DELETE
                                      FROM app_list
                                      WHERE serial_number = %s
-                                     """, (data.serial_number))
+                                     """, (serial_number))
                 insert_sql = """
                              INSERT INTO app_list (serial_number, app_name)
                              VALUES (%s, %s) \
                              """
                 await cursor.executemany(
                     insert_sql,
-                    [(data.serial_number, app) for app in data.apps]
+                    [(serial_number, app) for app in data.apps]
                 )
                 await conn.commit()
                 return {"status": "success"}
@@ -382,3 +380,13 @@ async def get_app_to_start_on_reboot(serial_number: str = Query(...)):
                     detail={"status": "failure",
                             "error": str(e)}
                 )
+
+
+# 在windows上测试
+if __name__ == '__main__':
+    uvicorn.run(
+        app="app:app",
+        host="0.0.0.0",
+        port=5000,
+        workers=1
+    )
